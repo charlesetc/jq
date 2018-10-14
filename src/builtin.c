@@ -454,6 +454,29 @@ static jv f_tostring(jq_state *jq, jv input) {
   }
 }
 
+static jv f_write(jq_state *jq, jv ignore,  jv name, jv content_) {
+  jv_free(ignore);
+  jv content = f_tostring(jq, content_);
+  if (jv_get_kind(name) != JV_KIND_STRING || jv_get_kind(content) != JV_KIND_STRING)
+    return ret_error2(name, content, jv_string("write() requires string inputs"));
+  const char *name_str = jv_string_value(name);
+  const char *content_str = jv_string_value(content);
+  size_t content_len = jv_string_length_bytes(jv_copy(content));
+  jv ret;;
+  FILE *f = fopen(name_str, "w+");
+  size_t written =fwrite(content_str, sizeof(char), content_len, f);
+  fclose(f);
+
+  if (written == content_len)
+    ret = jv_true();
+  else
+    ret = jv_false();
+  jv_free(name);
+  jv_free(content);
+  return ret;
+}
+
+
 static jv f_utf8bytelength(jq_state *jq, jv input) {
   if (jv_get_kind(input) != JV_KIND_STRING)
     return type_error(input, "only strings have UTF-8 byte length");
@@ -1598,6 +1621,7 @@ static const struct cfunction function_list[] = {
   {(cfunction_ptr)f_keys_unsorted, "keys_unsorted", 1},
   {(cfunction_ptr)f_startswith, "startswith", 2},
   {(cfunction_ptr)f_endswith, "endswith", 2},
+  {(cfunction_ptr)f_write, "write", 3},
   {(cfunction_ptr)f_ltrimstr, "ltrimstr", 2},
   {(cfunction_ptr)f_rtrimstr, "rtrimstr", 2},
   {(cfunction_ptr)f_string_split, "split", 2},
