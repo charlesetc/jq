@@ -477,6 +477,69 @@ static jv f_write(jq_state *jq, jv ignore,  jv name, jv content_) {
 }
 
 
+char *read_file(const char *filename) {
+  /* declare a file pointer */
+  FILE    *infile;
+  char    *buffer;
+  long    numbytes;
+   
+  /* open an existing file for reading */
+  infile = fopen(filename, "r");
+   
+  /* quit if the file does not exist */
+  if(infile == NULL)
+        return NULL;
+   
+  /* Get the number of bytes */
+  fseek(infile, 0L, SEEK_END);
+  numbytes = ftell(infile);
+   
+  /* reset the file position indicator to 
+   * the beginning of the file */
+  fseek(infile, 0L, SEEK_SET);
+   
+  /* grab sufficient memory for the 
+   * buffer to hold the text */
+  buffer = (char*)calloc(numbytes, sizeof(char));
+   
+  /* memory error */
+  if(buffer == NULL)
+        return NULL;
+   
+  /* copy all the text into the buffer */
+  fread(buffer, sizeof(char), numbytes, infile);
+  fclose(infile);
+
+  return buffer;
+}
+
+static jv f_read(jq_state *jq, jv ignore, jv name) {
+  jv_free(ignore);
+  if (jv_get_kind(name) != JV_KIND_STRING)
+    return ret_error(name, jv_string("read() require string input"));
+  const char *name_str = jv_string_value(name);
+  jv ret;
+  char *content = read_file(name_str);
+  if (content) {
+    ret = jv_string(content);
+  } else {
+    ret = jv_null();
+  }
+  // do I need to free content here? ... probably
+  jv_free(name);
+  return ret;
+}
+
+static jv f_system(jq_state *jq, jv ignore, jv cmd) {
+  jv_free(ignore);
+  if (jv_get_kind(cmd) != JV_KIND_STRING)
+    return ret_error(cmd, jv_string("system() require string input"));
+  const char *cmd_str = jv_string_value(cmd);
+  int i = system(cmd_str);
+  return jv_number(i);
+}
+
+
 static jv f_utf8bytelength(jq_state *jq, jv input) {
   if (jv_get_kind(input) != JV_KIND_STRING)
     return type_error(input, "only strings have UTF-8 byte length");
@@ -1622,6 +1685,8 @@ static const struct cfunction function_list[] = {
   {(cfunction_ptr)f_startswith, "startswith", 2},
   {(cfunction_ptr)f_endswith, "endswith", 2},
   {(cfunction_ptr)f_write, "write", 3},
+  {(cfunction_ptr)f_system, "system", 2},
+  {(cfunction_ptr)f_read, "read", 2},
   {(cfunction_ptr)f_ltrimstr, "ltrimstr", 2},
   {(cfunction_ptr)f_rtrimstr, "rtrimstr", 2},
   {(cfunction_ptr)f_string_split, "split", 2},
