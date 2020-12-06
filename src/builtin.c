@@ -501,8 +501,6 @@ char *read_file(const char *filename) {
   /* grab sufficient memory for the 
    * buffer to hold the text */
   buffer = (char*)calloc(numbytes + 1, sizeof(char));
-
-  int _written = fprintf(stderr, "%ld\n", numbytes);
    
   /* memory error */
   if(buffer == NULL)
