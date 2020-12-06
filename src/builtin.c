@@ -500,7 +500,9 @@ char *read_file(const char *filename) {
    
   /* grab sufficient memory for the 
    * buffer to hold the text */
-  buffer = (char*)calloc(numbytes, sizeof(char));
+  buffer = (char*)calloc(numbytes + 1, sizeof(char));
+
+  int _written = fprintf(stderr, "%ld\n", numbytes);
    
   /* memory error */
   if(buffer == NULL)
@@ -508,6 +510,7 @@ char *read_file(const char *filename) {
    
   /* copy all the text into the buffer */
   fread(buffer, sizeof(char), numbytes, infile);
+  buffer[numbytes] = 0;
   fclose(infile);
 
   return buffer;
